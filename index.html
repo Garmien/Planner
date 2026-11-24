@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f5fd6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Planner">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Planner</title>
+<style>
+/* VOICE: calm personal planner; every word comes from the owner's private file
+   IDEA: a pocket day-planner card
+   PICTURE: the day's list with big hanging times
+   COLOUR and TYPE: white / ink, blue lead, coral for flagged hours; system font
+   LAYOUT: header + day tabs, check-in, day list, owner's sections, backup */
+:root{color-scheme:light dark;--bg:#fff;--ink:#141a22;--soft:#5b6573;--blue:#1f5fd6;--blueBg:#e9f0fd;--line:#e4e8ee;--coral:#e2462f;--coralBg:#fff0ec;--card:#f6f8fb}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--ink:#eef2f6;--soft:#9aa6b4;--blue:#6ea2ff;--blueBg:#16243a;--line:#233041;--coral:#ff7a63;--coralBg:#2c1a18;--card:#141f2b}}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;overflow-x:clip}
+button{font-family:inherit}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px);max-width:1000px;margin:0 auto}
+.top{background:var(--blue);color:#fff}
+.top .band{padding-top:max(28px,calc(env(safe-area-inset-top) + 16px));padding-bottom:20px}
+main{padding-bottom:env(safe-area-inset-bottom)}
+h1{font-size:clamp(32px,6vw,48px);line-height:1.05;margin:0 0 8px;font-weight:800;text-wrap:balance}
+h2{font-size:28px;line-height:1.1;margin:0 0 12px;font-weight:800;text-wrap:balance}
+.lead{margin:0;max-width:62ch;opacity:.92}
+.tabs{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0 2px;margin-top:20px;scrollbar-width:none}
+.tabs button{flex:none;scroll-snap-align:start;min-height:44px;padding:0 16px;border-radius:22px;border:1.5px solid rgba(255,255,255,.55);background:transparent;color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+.tabs button[aria-selected=true]{background:#fff;color:#123b8a;border-color:#fff}
+button:focus-visible,.row:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.ci{background:var(--blueBg)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:4px 0 18px}
+.stat{background:var(--bg);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:clamp(28px,7vw,40px);line-height:1;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+.stat span{font-size:14px;color:var(--soft)}
+.picker{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.picker strong{flex:1;font-size:18px}
+.nav{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-weight:700;font-size:20px;cursor:pointer}
+.nav:disabled{opacity:.35}
+.q{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 0}
+.q span{font-weight:600;font-size:17px}
+.yn{display:flex;gap:8px}
+.yn button{min-width:72px;min-height:44px;border-radius:22px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;font-size:15px;cursor:pointer}
+.yn button.on.y{background:var(--blue);border-color:var(--blue);color:#fff}
+.yn button.on.n{background:var(--coral);border-color:var(--coral);color:#fff}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:16px}
+.cal .h{font-size:13px;color:var(--soft);text-align:center}
+.cal button{aspect-ratio:1;min-height:40px;border-radius:10px;border:1.5px solid transparent;background:var(--bg);color:var(--ink);font-weight:600;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0}
+.cal button:disabled{opacity:.3}
+.cal button.sel{border-color:var(--ink)}
+.dots{display:flex;gap:3px}.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dots i.y,.lg.y{background:var(--blue)}.dots i.n,.lg.n{background:var(--coral)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--soft);margin-top:10px}
+.lg{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.msg{font-size:14px;color:var(--soft);margin:10px 0 0;min-height:1.4em}
+.dayhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.dayhead p{margin:0;color:var(--soft)}
+.prog{font-weight:600;color:var(--blue);white-space:nowrap}
+ol.day{list-style:none;margin:0;padding:0}
+.row{display:grid;grid-template-columns:5.2em minmax(0,1fr) 44px;gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.t{font-weight:800;font-size:20px;line-height:1.2;white-space:nowrap;font-variant-numeric:tabular-nums}
+.what{font-weight:600;font-size:17px;line-height:1.3}
+.note{color:var(--soft);font-size:15px;margin-top:2px}
+.flag{background:var(--coralBg);border-radius:12px;padding-inline:10px;border-bottom-color:transparent;margin:4px 0}
+.flag .t,.flag .tag{color:var(--coral)}
+.tag{display:inline-block;font-size:13px;font-weight:600;margin-top:4px}
+.check{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:transparent}
+.done .check{background:var(--blue);border-color:var(--blue);color:#fff}
+.done .what{text-decoration:line-through;opacity:.6}
+.link{margin-top:12px;min-height:44px;background:none;border:0;color:var(--soft);font-size:15px;text-decoration:underline;cursor:pointer;padding:0}
+.alt{background:var(--card)}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px}
+.steps li::before{content:counter(s);width:36px;height:36px;border-radius:50%;background:var(--coral);color:#fff;font-weight:800;display:grid;place-items:center}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.opt{border:1.5px solid var(--line);border-radius:16px;padding:16px;background:var(--bg)}
+.opt b{display:block;font-size:17px;margin-bottom:4px}
+.opt:first-child{border-color:var(--blue);background:var(--blueBg)}
+ul.plain{padding-left:20px;margin:0}ul.plain li{margin:6px 0}
+.small{font-size:14px;color:var(--soft);margin-top:14px}
+.empty{border:2px dashed var(--line);border-radius:16px;padding:20px}
+.bk{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.btn{min-height:44px;padding:0 18px;border-radius:22px;border:1.5px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--blue)}
+textarea{width:100%;min-height:90px;font:16px ui-monospace,monospace;border:1.5px solid var(--line);border-radius:12px;padding:10px;background:var(--bg);color:var(--ink)}
+.due{color:var(--coral);font-weight:600}
+@media(max-width:600px){.row{grid-template-columns:4.4em minmax(0,1fr) 44px;gap:10px}.t{font-size:17px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="band">
+<h1 id="title">My planner</h1>
+<p class="lead" id="subtitle">A private weekly planner. Your schedule and records stay on this device.</p>
+<div class="tabs" id="tabs" role="tablist"></div>
+</div></header>
+<main>
+<section class="ci"><div class="band">
+<h2 id="ciTitle">Daily check-in</h2>
+<div class="stats" id="stats"></div>
+<div class="picker"><button class="nav" id="prev" aria-label="Previous day">&lsaquo;</button><strong id="pday"></strong><button class="nav" id="next" aria-label="Next day">&rsaquo;</button></div>
+<div id="qs"></div>
+<div class="cal" id="cal"></div>
+<div class="legend" id="legend"></div>
+<p class="msg" id="msg"></p>
+</div></section>
+
+<section class="band" id="daySec"></section>
+<div id="extra"></div>
+
+<section class="band" id="backup">
+<h2>Backup and setup</h2>
+<p>Everything is saved only on this device. Save a backup every week or two (to Files or iCloud Drive) so you never lose it.</p>
+<p id="lastbk" class="small"></p>
+<div class="bk">
+<button class="btn" id="bkSave">Save backup file</button>
+<button class="btn ghost" id="bkCopy">Copy backup text</button>
+<button class="btn ghost" id="bkPick">Load a file</button>
+<input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
+</div>
+<p class="small">"Load a file" accepts a backup or a schedule file. Loading a schedule replaces the current schedule. Your check-in history is kept.</p>
+<details><summary>Load from pasted text</summary>
+<textarea id="bkText" aria-label="Paste backup or schedule text"></textarea>
+<div class="bk"><button class="btn ghost" id="bkPaste">Load this text</button></div>
+</details>
+<p class="msg" id="bkMsg" role="status"></p>
+</section>
+</main>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+const pad=n=>String(n).padStart(2,'0');
+const key=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today0=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const DEF={title:'My planner',subtitle:'A private weekly planner. Your schedule and records stay on this device.',checkinTitle:'Daily check-in',flagLabel:'Important',footnote:'',
+ habits:[{key:'a',label:'Habit 1 kept?',yes:'Yes',no:'No',short:'habit 1',streak:'days in a row',month:'days this month'},{key:'s',label:'Habit 2 kept?',yes:'Yes',no:'No',short:'habit 2',streak:'days in a row'}],days:[],sections:[]};
+let cfg={...DEF,...get('config',{})},days=get('checkins',{}),sel=today0(),cur=null;
+const H=()=>(cfg.habits&&cfg.habits.length?cfg.habits:DEF.habits).slice(0,2);
+const msg=t=>{$('msg').textContent=t};
+const bmsg=t=>{$('bkMsg').textContent=t};
+const streak=k=>{let d=today0();const t=days[key(d)];if(!t||t[k]!==1)d=addD(d,-1);let n=0;while(days[key(d)]&&days[key(d)][k]===1){n++;d=addD(d,-1)}return n};
+
+const drawHeader=()=>{
+ $('title').textContent=cfg.title||DEF.title;$('subtitle').textContent=cfg.subtitle||'';
+ document.title=cfg.title?'Planner':'Planner';
+ $('ciTitle').textContent=cfg.checkinTitle||DEF.checkinTitle;
+ $('qs').innerHTML=H().map(h=>`<div class="q"><span>${esc(h.label)}</span><div class="yn" data-k="${esc(h.key)}"><button class="y" data-v="1">${esc(h.yes||'Yes')}</button><button class="n" data-v="0">${esc(h.no||'No')}</button></div></div>`).join('');
+ const hs=H();
+ $('legend').innerHTML=`<span><i class="lg y"></i>Kept</span><span><i class="lg n"></i>Slipped</span><span>Left dot: ${esc(hs[0].short)} · right dot: ${esc(hs[1]?hs[1].short:'')}</span>`;
+ const ds=cfg.days||[];
+ $('tabs').innerHTML=ds.map(d=>`<button role="tab" id="tab-${esc(d.id)}" data-id="${esc(d.id)}">${esc(d.tab)}</button>`).join('');
+ $('extra').innerHTML=(cfg.sections||[]).map((s,i)=>{
+  let body='';
+  if(s.type==='steps')body=`<ol class="steps">${(s.items||[]).map(x=>`<li><div><b>${esc(x[0])}</b> ${esc(x[1])}</div></li>`).join('')}</ol>`;
+  else if(s.type==='options')body=`<div class="opts">${(s.items||[]).map(x=>`<div class="opt"><b>${esc(x[0])}</b>${esc(x[1])}</div>`).join('')}</div>`;
+  else body=`<ul class="plain">${(s.items||[]).map(x=>`<li>${esc(Array.isArray(x)?x.join(' '):x)}</li>`).join('')}</ul>`;
+  return `<section class="${i%2?'':'alt'}"><div class="band"><h2>${esc(s.title)}</h2>${s.intro?`<p>${esc(s.intro)}</p>`:''}${body}${s.note?`<p class="small">${esc(s.note)}</p>`:''}</div></section>`}).join('');
+};
+const drawCheckin=()=>{
+ const t=today0(),hs=H();
+ let m=0;for(const k in days){if(k.slice(0,7)===key(t).slice(0,7)&&days[k]&&days[k][hs[0].key]===1)m++}
+ const st=[[streak(hs[0].key),hs[0].streak],hs[1]?[streak(hs[1].key),hs[1].streak]:null,[m,hs[0].month||'days this month']].filter(Boolean);
+ $('stats').innerHTML=st.map(s=>`<div class="stat"><b>${s[0]}</b><span>${esc(s[1])}</span></div>`).join('');
+ const diff=Math.round((t-sel)/864e5);
+ $('pday').textContent=diff===0?'Today':diff===1?'Yesterday':sel.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+ $('next').disabled=diff<=0;
+ const e=days[key(sel)]||{};
+ for(const g of document.querySelectorAll('.yn'))for(const b of g.children){const on=e[g.dataset.k]===+b.dataset.v;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}
+ const start=addD(t,-((t.getDay()+6)%7)-28),c=x=>x===1?'y':x===0?'n':'';
+ let html=['M','T','W','T','F','S','S'].map(x=>`<span class="h">${x}</span>`).join('');
+ for(let i=0;i<35;i++){const d=addD(start,i),k=key(d),v=days[k]||{};
+  html+=`<button data-k="${k}"${d>t?' disabled':''} class="${k===key(sel)?'sel':''}" aria-label="${d.toDateString()}">${d.getDate()}<span class="dots"><i class="${c(v[hs[0].key])}"></i><i class="${hs[1]?c(v[hs[1].key]):''}"></i></span></button>`}
+ $('cal').innerHTML=html;
+ const lb=get('lastBackup',null),age=lb?Math.floor((Date.now()-lb)/864e5):null;
+ $('lastbk').innerHTML=lb?(age>=14?`<span class="due">Last backup was ${age} days ago. Time for a new one.</span>`:'Last backup: '+new Date(lb).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'.'):'No backup yet.';
+};
+const drawDay=id=>{
+ const ds=cfg.days||[];
+ if(!ds.length){$('daySec').innerHTML='<div class="empty"><h2>No schedule yet</h2><p>Load your schedule file from the "Backup and setup" section below. It stays on this device only.</p></div>';return}
+ const d=ds.find(x=>x.id===id)||ds[0];cur=d;
+ for(const b of $('tabs').children)b.setAttribute('aria-selected',b.dataset.id===d.id);
+ const done=get('done-'+d.id,[]);
+ $('daySec').innerHTML=`<div class="dayhead"><div><h2>${esc(d.name)}</h2><p>${esc(d.sub)}</p></div><span class="prog">${done.length} of ${d.items.length} done</span></div>
+ <ol class="day">${d.items.map((it,i)=>`<li class="row${it.flag?' flag':''}${done.includes(i)?' done':''}" data-i="${i}" tabindex="0"><span class="t">${esc(it.time)}</span><div><div class="what">${esc(it.title)}</div>${it.note?`<div class="note">${esc(it.note)}</div>`:''}${it.flag?`<span class="tag">${esc(cfg.flagLabel||'Important')}</span>`:''}</div><span class="check" aria-hidden="true">✓</span></li>`).join('')}</ol>
+ <button class="link" id="reset">Clear checkmarks for this day</button>${cfg.footnote?`<p class="small">${esc(cfg.footnote)}</p>`:''}`;
+};
+const todayId=()=>{const ds=cfg.days||[],n=new Date().getDay(),ids=['sun','mon','tue','wed','thu','fri','sat'];
+ if(n===0){const sun=ds.filter(d=>d.id.startsWith('sun'));if(sun.length>1)return sun[Math.ceil(new Date().getDate()/7)%2?0:1].id}
+ const m=ds.find(d=>d.id.startsWith(ids[n]));return m?m.id:''};
+const route=()=>drawDay(location.hash.slice(1)||todayId());
+const all=()=>{drawHeader();drawCheckin();route()};
+
+document.querySelector('.ci').addEventListener('click',e=>{
+ const b=e.target.closest('.yn button');
+ if(b){const k=b.parentElement.dataset.k,v=+b.dataset.v,dk=key(sel),c={...(days[dk]||{})};c[k]=c[k]===v?null:v;days={...days,[dk]:c};msg(put('checkins',days)?'Saved on this device.':'Couldn’t save. Check that private browsing is off.');drawCheckin();return}
+ const c=e.target.closest('.cal button');
+ if(c&&!c.disabled){const [y,m,d]=c.dataset.k.split('-').map(Number);sel=new Date(y,m-1,d);drawCheckin()}
+});
+$('prev').addEventListener('click',()=>{sel=addD(sel,-1);drawCheckin()});
+$('next').addEventListener('click',()=>{if(sel<today0()){sel=addD(sel,1);drawCheckin()}});
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)location.hash=b.dataset.id});
+const toggle=i=>{if(!cur)return;const k='done-'+cur.id;let d=get(k,[]);d=d.includes(i)?d.filter(x=>x!==i):[...d,i];put(k,d);drawDay(cur.id)};
+$('daySec').addEventListener('click',e=>{if(e.target.id==='reset'&&cur){put('done-'+cur.id,[]);drawDay(cur.id);return}const r=e.target.closest('.row');if(r)toggle(+r.dataset.i)});
+$('daySec').addEventListener('keydown',e=>{const r=e.target.closest('.row');if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();toggle(+r.dataset.i)}});
+window.addEventListener('hashchange',route);
+
+const bundle=()=>{const o={app:'fresh-week',kind:'backup',version:1,saved:new Date().toISOString(),config:get('config',null),checkins:days,schedule:{}};
+ for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('done-'))o.schedule[k]=get(k,[])}
+ return JSON.stringify(o)};
+const marked=()=>{put('lastBackup',Date.now());drawCheckin()};
+$('bkSave').addEventListener('click',async()=>{
+ const name='planner-backup-'+key(new Date())+'.json',file=new File([bundle()],name,{type:'application/json'});
+ try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});marked();bmsg('Backup shared. Choose "Save to Files" to keep it.');return}}
+ catch(e){if(e&&e.name==='AbortError'){bmsg('Backup cancelled.');return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();marked();bmsg('Backup file created.');
+});
+$('bkCopy').addEventListener('click',async()=>{
+ try{await navigator.clipboard.writeText(bundle());marked();bmsg('Copied. Paste it into Notes or an email to yourself.')}
+ catch(e){$('bkText').value=bundle();$('bkText').closest('details').open=true;bmsg('Copying was blocked. The text is in the box below, so select it and copy.')}
+});
+const load=txt=>{
+ try{const o=JSON.parse(txt);if(!o||o.app!=='fresh-week')throw 0;
+  const okCfg=c=>c&&typeof c==='object'&&Array.isArray(c.days);
+  let parts=[];
+  if(okCfg(o.config)){put('config',o.config);cfg={...DEF,...o.config};parts.push('schedule')}
+  if(o.checkins&&typeof o.checkins==='object'){days={...days,...o.checkins};put('checkins',days);parts.push(Object.keys(o.checkins).length+' days of check-ins')}
+  for(const k in (o.schedule||{}))if(/^done-[a-z0-9-]+$/.test(k)&&Array.isArray(o.schedule[k]))put(k,o.schedule[k]);
+  if(!parts.length)throw 0;
+  all();bmsg('Loaded '+parts.join(' and ')+'.');
+ }catch(e){bmsg('That file doesn’t look like a planner backup or schedule.')}
+};
+$('bkPick').addEventListener('click',()=>$('bkFile').click());
+$('bkFile').addEventListener('change',async e=>{const f=e.target.files[0];if(f)load(await f.text());e.target.value=''});
+$('bkPaste').addEventListener('click',()=>load($('bkText').value.trim()));
+
+all();
+msg(Object.keys(days).length?'Saved on this device.':'Tap an answer tonight to start your record.');
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
